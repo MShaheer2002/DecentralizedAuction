@@ -16,7 +16,7 @@ router.post("/upload", upload.single("image"), async (req, res) => {
         };
         const metadataCID = await uploadMetadataToPinata(metadata);
 
-        res.json({ data: metadataCID });
+        res.json({ metaDataCID: metadataCID, imageCID: imageCID });
     } catch (err) {
         console.error("Upload failed:", err);
         res.status(500).json({ error: "Failed to upload to IPFS" });
