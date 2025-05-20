@@ -1,5 +1,6 @@
 import express from "express";
 import multer from "multer";
+import { Auction } from "../models/auction";
 import { uploadToPinata, uploadMetadataToPinata } from "../utils/pinata";
 
 const router = express.Router();
@@ -25,6 +26,31 @@ router.post("/upload", upload.single("image"), async (req, res) => {
         console.error("Upload failed:", err);
         res.status(500).json({ error: "Failed to upload to IPFS" });
     }
+});
+
+router.post("/startAuction", async (req, res) => {
+
+    try {
+        const { name, description, imageCID, metadataCID, tokenId, auctionEndTime } = req.body;
+
+        if (!name || !description || !imageCID || !metadataCID || !tokenId || !auctionEndTime) {
+            res.status(400).json({ success: "Failed", message: "Data missing!" });
+            return;
+        }
+
+        const auction = new Auction({ name, description, imageCID, metadataCID, tokenId, auctionEndTime });
+
+        auction.save();
+        res.status(200).json({ success: "Success", data: auction });
+
+        return;
+
+
+    } catch (err) {
+        console.error("Upload failed:", err);
+        res.status(500).json({ error: "Server Error" });
+    }
+
 });
 
 export default router;
