@@ -1,13 +1,13 @@
 import { ethers } from "hardhat";
 
 async function main() {
-    const Test = await ethers.getContractFactory("TestContract");
-    const test = await Test.deploy();
-    await test.waitForDeployment();
+    const Auction = await ethers.getContractFactory("AuctionContract");
+    const auction = await Auction.deploy();
+    await auction.waitForDeployment();
 
-    const address = await test.getAddress();
+    const address = await auction.getAddress();
 
-    console.log(`TestContract deployed at: ${address}`);
+    console.log(`Auction Contract deployed at: ${address}`);
 }
 
 

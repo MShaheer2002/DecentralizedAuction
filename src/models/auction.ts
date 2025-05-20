@@ -18,4 +18,4 @@ const auctionSchema = new mongoose.Schema({
   bids: [bidSchema], 
 });
 
-export const AuctionModel = mongoose.model("Auction", auctionSchema);
+export const Auction = mongoose.model("Auction", auctionSchema);
