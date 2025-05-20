@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract AuctionContract is ERC721URIStorage {
     uint public tokenCounter;
@@ -29,7 +28,7 @@ contract AuctionContract is ERC721URIStorage {
 
     function mintNFT(string memory tokenURI) public returns (uint) {
         uint tokenId = tokenCounter;
-        _safeMint(owner(), tokenId);
+        _safeMint(owner, tokenId);
         _setTokenURI(tokenId, tokenURI);
         tokenCounter++;
 
@@ -38,7 +37,7 @@ contract AuctionContract is ERC721URIStorage {
     }
 
     function startAuction(uint tokenId, uint durationInSeconds) external {
-        require(_exists(tokenId), "Token does not exist");
+        // require(_exists(tokenId), "Token does not exist");
         require(!auctions[tokenId].exists, "Auction already exists");
 
         auctions[tokenId] = Auction({
@@ -80,8 +79,8 @@ contract AuctionContract is ERC721URIStorage {
         auction.auctionEnded = true;
 
         if (auction.highestBidder != address(0)) {
-            _transfer(owner(), auction.highestBidder, tokenId);
-            payable(owner()).transfer(auction.highestBid);
+            _transfer(owner, auction.highestBidder, tokenId);
+            payable(owner).transfer(auction.highestBid);
             emit AuctionEnded(
                 tokenId,
                 auction.highestBidder,
