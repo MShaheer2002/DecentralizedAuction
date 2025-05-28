@@ -1,6 +1,5 @@
 import { AdminPage } from "@/pages/admin";
-import { User } from "@/pages/user";
-import { LandingPage } from "@/pages/landing_page";
+import { UserSide } from "@/pages/user/index";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AlertProvider } from "./components/ui/alert";
 const AppRoutes = () => {
@@ -8,8 +7,7 @@ const AppRoutes = () => {
     <BrowserRouter>
       <AlertProvider>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/user" element={<User />} />
+          <Route path="/" element={<UserSide />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </AlertProvider>

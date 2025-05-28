@@ -3,10 +3,9 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
-
-contract NFTAuction is ERC721URIStorage {
+contract AuctionContract is ERC721URIStorage {
     uint public tokenCounter;
-    address owner;
+    address owner = msg.sender;
 
     struct Auction {
         uint highestBid;
@@ -25,10 +24,9 @@ contract NFTAuction is ERC721URIStorage {
 
     constructor() ERC721("AuctionNFT", "ANFT") {
         tokenCounter = 0;
-        owner = msg.sender;
     }
 
-    function mintNFT(string memory tokenURI) public  returns (uint) {
+    function mintNFT(string memory tokenURI) public returns (uint) {
         uint tokenId = tokenCounter;
         _safeMint(owner, tokenId);
         _setTokenURI(tokenId, tokenURI);
@@ -38,7 +36,8 @@ contract NFTAuction is ERC721URIStorage {
         return tokenId;
     }
 
-    function startAuction(uint tokenId, uint durationInSeconds) external  {
+    function startAuction(uint tokenId, uint durationInSeconds) external {
+        // require(_exists(tokenId), "Token does not exist");
         require(!auctions[tokenId].exists, "Auction already exists");
 
         auctions[tokenId] = Auction({
@@ -68,10 +67,13 @@ contract NFTAuction is ERC721URIStorage {
         emit NewBid(tokenId, msg.sender, msg.value);
     }
 
-    function endAuction(uint tokenId) external  {
+    function endAuction(uint tokenId) external {
         Auction storage auction = auctions[tokenId];
         require(auction.exists, "Auction doesn't exist");
-        require(block.timestamp >= auction.auctionEndTime, "Auction not ended yet");
+        require(
+            block.timestamp >= auction.auctionEndTime,
+            "Auction not ended yet"
+        );
         require(!auction.auctionEnded, "Already ended");
 
         auction.auctionEnded = true;
@@ -79,7 +81,11 @@ contract NFTAuction is ERC721URIStorage {
         if (auction.highestBidder != address(0)) {
             _transfer(owner, auction.highestBidder, tokenId);
             payable(owner).transfer(auction.highestBid);
-            emit AuctionEnded(tokenId, auction.highestBidder, auction.highestBid);
+            emit AuctionEnded(
+                tokenId,
+                auction.highestBidder,
+                auction.highestBid
+            );
         }
     }
 }

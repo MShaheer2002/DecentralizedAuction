@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import nftRoutes from "../src/routes/nftRoutes";
+// import nftRoutes from "./routes/nftRoutes";
 import WebSocket, { WebSocketServer } from "ws";
 import http from "http";
 
@@ -25,7 +25,7 @@ wss.on("connection", (ws: WebSocket) => {
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/nft", nftRoutes);
+// app.use("/api/nft", nftRoutes);
 
 server.listen(Port, () => {
     console.log(`Server running on port ${Port}`);
