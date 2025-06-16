@@ -7,15 +7,17 @@ const bidSchema = new mongoose.Schema({
 });
 
 const auctionSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  imageCID: { type: String, required: true },
-  metadataCID: { type: String, required: true },
+  NFTname: { type: String, required: true },
+  NFTdescription: { type: String, required: true },
   tokenId: { type: Number, required: true },
-  auctionEndTime: { type: Number, required: true },
-  highestBid: { type: Number },
-  highestBidder: { type: String },
-  bids: [bidSchema], 
+  tokenURI: { type: String, required: true },
+  auctionStarted: { type: Boolean, default: false },
+  auctionEnded: { type: Boolean, default: false },
+  imageUrl: { type: String, required: true },
+  mintedAt: { type: Date, default: Date.now },
+  auctionStartTime: { type: Date, default: Date.now },
+  auctionEndTime: { type: Date, default: Date.now },
+  bids: [bidSchema],
 });
 
-export const Auction = mongoose.model("Auction", auctionSchema);
+export const AuctionModel = mongoose.model("Auction", auctionSchema);

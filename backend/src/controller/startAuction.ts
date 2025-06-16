@@ -1,27 +1,25 @@
-// import express from "express";
+// import express, { Request, Response } from "express";
 // import { AuctionModel } from "../models/auction";
-// import  {AuctionContract}  from "../../contracts/Auction.sol";
-// import { sendTx } from "../utils/tx"; // optional helper to abstract transaction sending
+// import { auctionContract } from "../utils/web3";
 
 // const router = express.Router();
 
-// router.post("/start-auction", async (req, res) => {
+// router.post("/start-auction", async (req: Request, res: Response): Promise<void> => {
 //     try {
 //         const { name, description, tokenURI, auctionDuration } = req.body;
 
-//         // Mint NFT
-//         const mintTx = await nftContract.methods
-//             .mintNFT(tokenURI)
-//             .send({ from: process.env.OWNER_ADDRESS });
+//         const mintTx = await auctionContract.mintNFT(tokenURI);
+//         const mintReceipt = await mintTx.wait();
 
-//         const tokenId = await nftContract.methods.tokenCounter().call() - 1;
+//         const tokenId = (await auctionContract.tokenCounter()).toNumber() - 1;
 
-//         // Start auction
-//         await nftContract.methods
-//             .startAuction(auctionDuration)
-//             .send({ from: process.env.OWNER_ADDRESS });
+//         if (tokenId === undefined) {
+//             res.status(500).json({ error: "Unable to fetch tokenId" });
+//         }
 
-//         // Save to DB
+//         const startAuctionTx = await auctionContract.startAuction(tokenId, auctionDuration);
+//         await startAuctionTx.wait();
+
 //         const auction = await AuctionModel.create({
 //             name,
 //             description,
