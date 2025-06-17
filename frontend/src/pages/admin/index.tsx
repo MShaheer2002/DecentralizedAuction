@@ -9,13 +9,16 @@ import { Label } from "@radix-ui/react-label";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { ethers,  } from "ethers"
+import { ethers, } from "ethers"
 import { Spin } from "antd";
 import { LoadingOutlined } from '@ant-design/icons';
+import { useNavigate } from "react-router-dom";
 import DoNotDisturbAltIcon from '@mui/icons-material/DoNotDisturbAlt';
+import axios from "axios";
 export const AdminPage = () => {
+    const navigate = useNavigate();
     const dispatch = useDispatch();
-    const loading = useSelector((state: any) => state.loading.value);
+    const loading = useSelector((state: boolean) => state.loading.value);
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string>("")
     const [walletConnected, setWalletConnected] = useState(false)
@@ -24,8 +27,11 @@ export const AdminPage = () => {
         userName: "",
         startTime: "",
         description: "",
+        basePrice: "",
     })
-
+    const [time, setTime] = useState<string>("")
+    const [mintData, setMintData] = useState<any>(null)
+    const [mintedNFT, setMintedNFT] = useState<boolean>(false)
     const connectWallet = async () => {
         dispatch(setLoading(true));
         try {
@@ -37,15 +43,15 @@ export const AdminPage = () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const address = await signer.getAddress();
-            
+
             console.log("Accounts:", accounts);
             console.log("Connected to wallet:", address);
             console.log("Signer:", signer);
             console.log("Provider:", provider);
-            
+
             setWalletConnected(true);
             setWalletAddress(address);
-            
+
             return {
                 address,
                 signer,
@@ -70,6 +76,7 @@ export const AdminPage = () => {
             setSelectedFile(file)
             const url = URL.createObjectURL(file)
             setPreviewUrl(url)
+            console.log("Selected file:", file)
         }
     }
 
@@ -77,23 +84,81 @@ export const AdminPage = () => {
         setFormData((prev) => ({
             ...prev,
             [field]: value,
-        }))
-    }
-
-    const handleMintNFT = () => {
-        if (!walletConnected) {
-            alert("Please connect your wallet first!");
-            return;
+        }));
+        if (field === "startTime") {
+            const now = new Date();
+            const selectedTime = new Date(value);
+            const nowInSeconds = Math.floor(now.getTime() / 1000);
+            const selectedInSeconds = Math.floor(selectedTime.getTime() / 1000);
+            const difference = selectedInSeconds - nowInSeconds;
+            console.log("Time until auction starts (seconds):", difference);
+            setTime(difference);
         }
-        // This will be connected to smart contract functions later
-        console.log("Minting NFT with data:", {
-            file: selectedFile,
-            walletAddress,
-            ...formData,
-        })
+    };
+
+
+    const handleMintNFT = async () => {
+        try {
+            console.log("Form Data:", formData, "Selected File:", selectedFile, "Time:", time);
+            dispatch(setLoading(true));
+            const formdata = new FormData();
+            formdata.append("name", formData.userName);
+            formdata.append("description", formData.description);
+            formdata.append("startTime", time);
+            formdata.append("image", selectedFile);
+            const response = await axios.post("http://localhost:3000/api/nft/upload", formdata, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+            if (response.status === 200) {
+                alert("NFT uploaded successfully!");
+                setMintedNFT(true);
+            }
+            setMintData(response.data);
+            console.log("Upload success:", response.data);
+        } catch (error) {
+            console.error("Upload failed:", error);
+        } finally {
+            dispatch(setLoading(false));
+        }
+    };
+    const handleStartAuction = async () => {
+        try {
+            console.log("Mint Data:", mintData, "Time:", time, "Base Price:", formData.basePrice);
+            dispatch(setLoading(true));
+            const response = await axios.post("http://localhost:3000/api/nft/start-auction", {
+                tokenId: mintData.tokenId,
+                durationInSeconds: time,
+                basePrice: formData.basePrice || "0",
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            if (response.status === 200) {
+                alert("Auction started successfully!");
+                formData.userName = "";
+                formData.startTime = "";
+                formData.description = "";
+                formData.basePrice = "";
+                setSelectedFile(null);
+                setTime("");
+                setPreviewUrl("");
+                setMintData(null);
+                setMintedNFT(false);
+                navigate("/");
+            }
+
+        } catch (error) {
+            console.error("Start auction failed:", error);
+            alert("Failed to start auction. Please try again.");
+        }
+        finally {
+            dispatch(setLoading(false));
+        }
     }
 
-    // Show spinner while connecting to MetaMask
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-black via-gray-900 to-gray-800">
@@ -112,7 +177,6 @@ export const AdminPage = () => {
         );
     }
 
-    // Show error state if wallet connection failed
     if (!loading && !walletConnected) {
         return (
             <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-black via-gray-900 to-gray-800 p-4">
@@ -124,7 +188,7 @@ export const AdminPage = () => {
                     <p className="text-gray-300 mb-6">
                         Unable to connect to MetaMask. Please make sure it's installed and try again.
                     </p>
-                    <Button 
+                    <Button
                         onClick={connectWallet}
                         className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-black font-semibold px-8 py-3 rounded-xl"
                     >
@@ -150,7 +214,7 @@ export const AdminPage = () => {
                         NFT Auction Admin
                     </h1>
                     <p className="text-gray-300 font-medium text-lg md:text-xl">
-                        Create and mint your NFT for the decentralized auction
+                        Mint your NFT for the decentralized auction
                     </p>
                     <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full">
                         <Shield className="w-4 h-4 text-green-400" />
@@ -158,20 +222,17 @@ export const AdminPage = () => {
                             Connected: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                         </span>
                     </div>
-                    <Button 
-                    onClick={() => {
-                        setWalletConnected(false);
-                        setWalletAddress("");
-                        setSelectedFile(null);
-                        setPreviewUrl("");
-                        setFormData({
-                            userName: "",
-                            startTime: "",
-                            description: "",
-                        });
-                    }}
-                    className="ml-2  hover:bg-red-300/10 hover:text-accent-foreground inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full">
-                       <DoNotDisturbAltIcon fontSize="small" className="text-red-400" />
+                    <Button
+                        onClick={() => {
+                            setWalletConnected(false);
+                            setFormData({
+                                userName: "",
+                                startTime: "",
+                                description: "",
+                            });
+                        }}
+                        className="ml-2  hover:bg-red-300/10 hover:text-accent-foreground inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full">
+                        <DoNotDisturbAltIcon fontSize="small" className="text-red-400" />
                         <span className="text-red-400 font-semibold text-sm">
                             Disconnect Wallet
                         </span>
@@ -185,7 +246,7 @@ export const AdminPage = () => {
                             <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
                                 <Sparkles className="w-6 h-6 text-black" />
                             </div>
-                            Create New NFT
+                            Mint  NFT
                         </CardTitle>
                         <CardDescription className="text-gray-300 font-medium text-base mt-3">
                             Upload your digital artwork and configure auction parameters
@@ -248,13 +309,13 @@ export const AdminPage = () => {
                         {/* User Name Field */}
                         <div className="space-y-4">
                             <Label htmlFor="userName" className="text-base font-semibold text-green-400">
-                                Creator Name
+                                Name
                             </Label>
                             <div className="relative">
                                 <Input
                                     id="userName"
                                     type="text"
-                                    placeholder="Enter your name or artist alias"
+                                    placeholder="Enter your nft name"
                                     value={formData.userName}
                                     onChange={(e) => handleInputChange("userName", e.target.value)}
                                     className="h-14 bg-gray-800/50 border-2 border-gray-700/50 focus:border-green-400 focus:ring-4 focus:ring-green-400/20 rounded-xl font-medium text-base text-white placeholder:text-gray-500 hover:border-gray-600/50 transition-all duration-200"
@@ -262,6 +323,34 @@ export const AdminPage = () => {
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
                                     <div
                                         className={`w-3 h-3 rounded-full transition-colors duration-200 ${formData.userName ? "bg-green-400" : "bg-gray-600"}`}
+                                    />
+                                </div>
+                            </div>
+                            <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
+                                <p className="text-sm text-gray-300 font-medium flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                    This will be permanently recorded on the blockchain
+                                </p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <Label htmlFor="basePrice" className="text-base font-semibold text-green-400">
+                                Base Price <span className="text-gray-300 text-xs">
+                                    ( ETH )
+                                </span>
+                            </Label>
+                            <div className="relative">
+                                <Input
+                                    id="basePrice"
+                                    type="number"
+                                    placeholder="Enter base price"
+                                    value={formData.basePrice}
+                                    onChange={(e) => handleInputChange("basePrice", e.target.value)}
+                                    className="h-14 bg-gray-800/50 border-2 border-gray-700/50 focus:border-green-400 focus:ring-4 focus:ring-green-400/20 rounded-xl font-medium text-base text-white placeholder:text-gray-500 hover:border-gray-600/50 transition-all duration-200"
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                    <div
+                                        className={`w-3 h-3 rounded-full transition-colors duration-200 ${formData.basePrice ? "bg-green-400" : "bg-gray-600"}`}
                                     />
                                 </div>
                             </div>
@@ -284,6 +373,7 @@ export const AdminPage = () => {
                                     id="startTime"
                                     type="datetime-local"
                                     value={formData.startTime}
+                                    min={new Date().toISOString().slice(0, 16)}
                                     onChange={(e) => handleInputChange("startTime", e.target.value)}
                                     className="h-14 bg-gray-800/50 border-2 border-gray-700/50 focus:border-green-400 focus:ring-4 focus:ring-green-400/20 rounded-xl font-medium text-base text-white hover:border-gray-600/50 transition-all duration-200"
                                 />
@@ -320,21 +410,49 @@ export const AdminPage = () => {
                         </div>
 
                         {/* Mint NFT Button */}
-                        <div className="pt-6">
+                        <div className="pt-6 space-y-4">
                             <Button
                                 onClick={handleMintNFT}
-                                className="w-full h-16 bg-gradient-to-r from-green-600 via-green-500 to-green-400 hover:from-green-700 hover:via-green-600 hover:to-green-500 text-black font-bold text-lg rounded-2xl shadow-2xl shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border border-green-400/20"
+                                className="w-full h-16 bg-gradient-to-r from-green-600 via-green-500 to-green-400 
+      hover:brightness-110 hover:saturate-150 hover:shadow-green-500/50 
+      text-black font-bold text-lg rounded-2xl shadow-lg 
+      transition-all duration-300 transform hover:scale-[1.03] 
+      active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none 
+      border border-green-400/30"
                                 disabled={!selectedFile || !formData.userName || !formData.startTime || !walletConnected}
                             >
                                 <div className="flex items-center justify-center gap-3">
                                     <div className="w-6 h-6 bg-black/20 rounded-lg flex items-center justify-center">
                                         <Sparkles className="w-4 h-4 text-black" />
                                     </div>
-                                    <span>Mint NFT & Deploy Auction</span>
+                                    <span>Mint NFT </span>
                                     <Zap className="w-5 h-5 text-black" />
                                 </div>
                             </Button>
+
+                            {/* Start Auction Button - Enhanced Indigo/Purple/Pink */}
+                            {mintedNFT && (
+                                <Button
+                                    onClick={handleStartAuction}
+                                    className="w-full h-16 bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-400 
+        hover:brightness-110 hover:saturate-150 hover:shadow-purple-500/50 
+        text-white font-bold text-lg rounded-2xl shadow-lg 
+        transition-all duration-300 transform hover:scale-[1.03] 
+        active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none 
+        border border-purple-400/30"
+                                    disabled={!selectedFile || !formData.userName || !formData.startTime || !walletConnected}
+                                >
+                                    <div className="flex items-center justify-center gap-3">
+                                        <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+                                            <Sparkles className="w-4 h-4 text-white" />
+                                        </div>
+                                        <span>Start Auction</span>
+                                        <Zap className="w-5 h-5 text-white" />
+                                    </div>
+                                </Button>
+                            )}
                         </div>
+
 
                         {/* Footer Section */}
                         <div className="text-center pt-6 border-t border-green-500/10">

@@ -7,7 +7,9 @@ contract AuctionContract is ERC721URIStorage {
     uint public tokenCounter;
     address owner = msg.sender;
 
+
     struct Auction {
+        uint basePrice;
         uint highestBid;
         address highestBidder;
         uint auctionEndTime;
@@ -18,7 +20,7 @@ contract AuctionContract is ERC721URIStorage {
     mapping(uint => Auction) public auctions;
 
     event NFTMinted(uint indexed tokenId, string tokenURI);
-    event AuctionStarted(uint indexed tokenId, uint endTime);
+    event AuctionStarted(uint indexed tokenId, uint endTime, uint basePrice);
     event NewBid(uint indexed tokenId, address bidder, uint amount);
     event AuctionEnded(uint indexed tokenId, address winner, uint amount);
 
@@ -28,7 +30,7 @@ contract AuctionContract is ERC721URIStorage {
 
     function mintNFT(string memory tokenURI) public returns (uint) {
         uint tokenId = tokenCounter;
-        _safeMint(owner, tokenId);
+        _safeMint(owner, tokenId); // Mints to msg.sender
         _setTokenURI(tokenId, tokenURI);
         tokenCounter++;
 
@@ -36,11 +38,12 @@ contract AuctionContract is ERC721URIStorage {
         return tokenId;
     }
 
-    function startAuction(uint tokenId, uint durationInSeconds) external {
-        // require(_exists(tokenId), "Token does not exist");
+    function startAuction(uint tokenId, uint durationInSeconds, uint basePrice) external {
+        // require(ownerOf(tokenId) == msg.sender, "You must own the NFT");
         require(!auctions[tokenId].exists, "Auction already exists");
 
         auctions[tokenId] = Auction({
+            basePrice: basePrice,
             highestBid: 0,
             highestBidder: address(0),
             auctionEndTime: block.timestamp + durationInSeconds,
@@ -48,17 +51,20 @@ contract AuctionContract is ERC721URIStorage {
             exists: true
         });
 
-        emit AuctionStarted(tokenId, auctions[tokenId].auctionEndTime);
+        emit AuctionStarted(tokenId, auctions[tokenId].auctionEndTime, basePrice);
     }
 
     function bid(uint tokenId) external payable {
         Auction storage auction = auctions[tokenId];
         require(auction.exists, "Auction doesn't exist");
         require(block.timestamp < auction.auctionEndTime, "Auction ended");
-        require(msg.value > auction.highestBid, "Bid too low");
 
-        if (auction.highestBid > 0) {
-            payable(auction.highestBidder).transfer(auction.highestBid);
+        // Check: is this the first bid?
+        if (auction.highestBid == 0) {
+            require(msg.value >= auction.basePrice, "Bid must be >= base price");
+        } else {
+            require(msg.value > auction.highestBid, "Bid too low");
+            payable(auction.highestBidder).transfer(auction.highestBid); // refund previous
         }
 
         auction.highestBid = msg.value;
@@ -70,22 +76,18 @@ contract AuctionContract is ERC721URIStorage {
     function endAuction(uint tokenId) external {
         Auction storage auction = auctions[tokenId];
         require(auction.exists, "Auction doesn't exist");
-        require(
-            block.timestamp >= auction.auctionEndTime,
-            "Auction not ended yet"
-        );
+        require(block.timestamp >= auction.auctionEndTime, "Auction not ended yet");
         require(!auction.auctionEnded, "Already ended");
 
         auction.auctionEnded = true;
 
+        address nftOwner = ownerOf(tokenId);
+
         if (auction.highestBidder != address(0)) {
-            _transfer(owner, auction.highestBidder, tokenId);
-            payable(owner).transfer(auction.highestBid);
-            emit AuctionEnded(
-                tokenId,
-                auction.highestBidder,
-                auction.highestBid
-            );
+            _transfer(nftOwner, auction.highestBidder, tokenId);
+            payable(nftOwner).transfer(auction.highestBid);
+
+            emit AuctionEnded(tokenId, auction.highestBidder, auction.highestBid);
         }
     }
 }

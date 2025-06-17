@@ -3,7 +3,10 @@ import multer from "multer";
 import { AuctionModel } from "../models/auction";
 import { uploadToPinata, uploadMetadataToPinata } from "../utils/pinata";
 import { auctionContract } from "../utils/web3";
-import { Log } from "ethers";
+import { Log, LogDescription } from "ethers";
+import { Console } from "console";
+import { parseEther } from "ethers";
+
 
 
 
@@ -31,14 +34,34 @@ router.post("/upload", upload.single("image"), async (req: Request, res: Respons
         const mintTx = await auctionContract.mintNFT(tokenURI);
         const receipt = await mintTx.wait();
 
+        // console.log("All logs:", receipt.logs.map(log => log.topics));
+
         // 🔍 Get tokenId from the event
-        const tokenId = (receipt.logs as Log[])
-            ?.map(log => auctionContract.interface.parseLog(log))
-            .find(parsed => parsed?.name === "NFTMinted")
-            ?.args?.tokenId.toString();
+        // const tokenId = (receipt.logs as Log[])
+        //     ?.map(log => auctionContract.interface.parseLog(log))
+        //     .find(parsed => parsed?.name === "NFTMinted")
+        //     ?.args?.tokenId.toString();
+
+        let tokenId: string | undefined;
+
+        // Filter only logs from your AuctionContract 
+        for (const log of receipt.logs as Log[]) {
+            try {
+                const parsed = auctionContract.interface.parseLog(log) as LogDescription;
+                if (parsed.name === "NFTMinted") {
+                    tokenId = parsed.args.tokenId.toString();
+                    break;
+                }
+            } catch (err) {
+                console.error("Failed to parse log:", err);
+            }
+        }
+        // Invalid log — skip it
+
 
         if (!tokenId) {
             res.status(500).json({ error: "Mint failed: tokenId missing" });
+            return;
         }
 
         const auction = await AuctionModel.create({
@@ -50,7 +73,7 @@ router.post("/upload", upload.single("image"), async (req: Request, res: Respons
             bids: [],
         });
 
-        if (!auction) {
+        if (auction) {
             // Send back response
             res.status(200).json({
                 message: "NFT minted and uploaded successfully",
@@ -72,15 +95,18 @@ router.post("/upload", upload.single("image"), async (req: Request, res: Respons
 
 router.post("/start-auction", async (req: Request, res: Response): Promise<void> => {
     try {
-        const { tokenId, durationInSeconds } = req.body;
+        const { tokenId, durationInSeconds, basePrice } = req.body;
 
-        if (tokenId === undefined || durationInSeconds === undefined) {
-            res.status(400).json({ error: "tokenId and durationInSeconds are required" });
+        if (tokenId === undefined || durationInSeconds === undefined || basePrice === undefined) {
+            res.status(400).json({ error: "tokenId, durationInSeconds, and basePrice are required" });
             return;
         }
 
-        // Call smart contract to start the auction
-        const tx = await auctionContract.startAuction(tokenId, durationInSeconds);
+        // Convert basePrice to wei using parseEther
+        const basePriceWei = parseEther(basePrice.toString());
+
+        // Call smart contract to start auction
+        const tx = await auctionContract.startAuction(tokenId, durationInSeconds, basePriceWei);
         const receipt = await tx.wait();
 
         // Parse the AuctionStarted event
@@ -99,11 +125,9 @@ router.post("/start-auction", async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const auctionEndTime = parsedLog.args.endTime.toString(); // Event argument is `endTime`
-
+        const auctionEndTime = parsedLog.args.endTime.toString();
         const auctionEndDate = new Date(parseInt(auctionEndTime) * 1000);
 
-        // Update the DB
         await AuctionModel.findOneAndUpdate(
             { tokenId },
             {
@@ -111,14 +135,15 @@ router.post("/start-auction", async (req: Request, res: Response): Promise<void>
                 auctionEnded: false,
                 auctionStartTime: new Date(),
                 auctionEndTime: auctionEndDate,
+                basePrice: basePrice
             },
             { new: true }
         );
 
-        res.json({
+        res.status(200).json({
             message: "Auction started successfully",
             tokenId,
-            auctionEndTime: auctionEndDate,
+            auctionEndTime: auctionEndDate
         });
     } catch (err) {
         console.error("Start auction error:", err);
@@ -224,6 +249,24 @@ router.post("/end-auction", async (req: Request, res: Response): Promise<void> =
     } catch (err) {
         console.error("End auction error:", err);
         res.status(500).json({ error: "Failed to end auction" });
+    }
+});
+
+
+router.get("/all-auctions", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const auctions = await AuctionModel.find().sort({ mintedAt: -1 }); // sorted by newest first
+
+        res.status(200).json({
+            success: true,
+            data: auctions,
+        });
+    } catch (error) {
+        console.error("Error fetching auctions:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to fetch auctions",
+        });
     }
 });
 

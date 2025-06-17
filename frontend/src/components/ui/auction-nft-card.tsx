@@ -4,7 +4,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Clock, TrendingUp, DollarSign, Zap, Heart, Share2, Eye } from "lucide-react"
 import { connectWallet } from "./meta_mask"
-
+import { getAuctionContract } from "../../lib/getContract";
+import { ethers } from "ethers";
 interface AuctionNFTCardProps {
     nftImage?: string
     nftTitle?: string
@@ -19,6 +20,7 @@ interface AuctionNFTCardProps {
     className?: string
     isLiked?: boolean
     viewCount?: number
+    tokenId?: number
 }
 
 const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
@@ -27,7 +29,8 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
     nftDescription = "A stunning piece of digital art that captures the essence of modern creativity and blockchain innovation.",
     highestBid = 2.5,
     basePrice = 1.0,
-    endTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000 + 30 * 60 * 1000), // 2d 2h 30m from now
+    tokenId = 1,
+    endTime = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000 + 30 * 60 * 1000),
     currency = "ETH",
     onPlaceBid = (bidAmount: number) => console.log(`Placing bid: ${bidAmount} ${currency}`),
     onFavorite = () => console.log("Added to favorites"),
@@ -41,6 +44,7 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
     const [liked, setLiked] = useState<boolean>(isLiked)
     const [bidAmount, setBidAmount] = useState<string>("")
     const [showBidInput, setShowBidInput] = useState<boolean>(false)
+
 
     useEffect(() => {
         const calculateTimeLeft = () => {
@@ -60,20 +64,39 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
                 setIsAuctionActive(false)
             }
         }
-
         calculateTimeLeft()
         const timer = setInterval(calculateTimeLeft, 60000)
 
         return () => clearInterval(timer)
     }, [endTime])
 
-    const handlePlaceBid = () => {
-        if (bidAmount && Number.parseFloat(bidAmount) > highestBid) {
-            onPlaceBid(Number.parseFloat(bidAmount))
-            setBidAmount("")
-            setShowBidInput(false)
+    const handlePlaceBid = async () => {
+        if (!bidAmount || Number.parseFloat(bidAmount) < basePrice) {
+            return alert("Bid must be higher than the current base price.");
         }
-    }
+        try {
+            // console.log("[check Tokenid]", tokenId);
+            const { signer } = await connectWallet();
+            // console.log("Signer:", signer);
+            const contract = getAuctionContract(signer);
+            if (!contract) return alert("Contract not connected");
+            const tx = await contract.bid(tokenId, {
+                value: ethers.parseEther(bidAmount), // Convert ETH to wei
+            });
+
+            await tx.wait(); // wait for transaction to be mined
+            alert("✅ Bid placed successfully!");
+
+            // Reset state
+            setBidAmount("");
+            setShowBidInput(false);
+            onPlaceBid(Number.parseFloat(bidAmount)); // callback
+
+        } catch (error) {
+            console.error("❌ Failed to place bid:", error);
+            alert("Something went wrong while placing the bid.");
+        }
+    };
 
     const handleFavorite = () => {
         setLiked(!liked)
@@ -179,8 +202,8 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
                             <span className="text-gray-400 text-sm font-semibold">Base Price:</span>
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-white text-2xl font-bold">{basePrice}</span>
-                            <span className="text-green-400 text-sm font-bold">{currency}</span>
+                            <span className="text-white text-sm font-bold">{basePrice}</span>
+                            <span className="text-green-400 text-md font-bold">{currency}</span>
                         </div>
                         <div className="text-gray-500 text-xs mt-1">≈ ${(basePrice * 2000).toLocaleString()} USD</div>
                     </div>
@@ -209,7 +232,7 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
                         <div className="flex items-center justify-between">
                             <span className="text-green-400 font-semibold">Enter your bid:</span>
                             <span className="text-gray-400 text-sm">
-                                Min: {minimumBid} {currency}
+                                Min <span className="text-gray-400 font-semibold">{">"}</span> {basePrice} {currency}
                             </span>
                         </div>
                         <div className="flex gap-3">
@@ -217,17 +240,17 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
                                 <input
                                     type="number"
                                     step="0.1"
-                                    min={minimumBid}
+                                    min={basePrice}
                                     value={bidAmount}
                                     onChange={(e) => setBidAmount(e.target.value)}
-                                    placeholder={`${minimumBid}`}
+                                    placeholder={`${basePrice}`}
                                     className="w-full h-12 bg-gray-900/50 border-2 border-gray-700/50 focus:border-green-400 focus:ring-2 focus:ring-green-400/20 rounded-lg px-4 text-white font-semibold text-lg placeholder:text-gray-500 transition-all duration-200"
                                 />
                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-400 font-bold">{currency}</span>
                             </div>
                             <button
                                 onClick={handlePlaceBid}
-                                disabled={!bidAmount || Number.parseFloat(bidAmount) <= highestBid}
+                                disabled={!bidAmount || Number.parseFloat(bidAmount) <= basePrice}
                                 className="px-6 h-12 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 disabled:from-gray-600 disabled:to-gray-500 text-black font-bold rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:transform-none"
                             >
                                 Bid
@@ -239,8 +262,9 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
                 {/* Place Bid Button */}
                 <div className="space-y-3">
                     <button
-                        onClick={() => {setShowBidInput(!showBidInput)
-                            connectWallet(); 
+                        onClick={() => {
+                            setShowBidInput(!showBidInput)
+                            connectWallet();
                         }}
                         disabled={!isAuctionActive}
                         className="w-full h-16 bg-gradient-to-r from-green-600 via-green-500 to-green-400 hover:from-green-700 hover:via-green-600 hover:to-green-500 disabled:from-gray-600 disabled:via-gray-500 disabled:to-gray-400 text-black font-bold text-lg rounded-xl shadow-2xl shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border border-green-400/20"
@@ -258,9 +282,9 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
                     {isAuctionActive && (
                         <div className="text-center space-y-1">
                             <p className="text-gray-400 text-sm font-medium">
-                                Minimum bid:{" "}
+                                Minimum bid{" > "}
                                 <span className="text-green-400 font-bold">
-                                    {minimumBid} {currency}
+                                    {basePrice} {currency}
                                 </span>
                             </p>
                             <p className="text-gray-500 text-xs">🔒 Secured by smart contract • Gas fees apply</p>

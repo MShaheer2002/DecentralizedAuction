@@ -8,7 +8,7 @@ const bidSchema = new mongoose.Schema({
 
 const auctionSchema = new mongoose.Schema({
   NFTname: { type: String, required: true },
-  NFTdescription: { type: String, required: true },
+  NFTdescription: { type: String, required: true }  ,
   tokenId: { type: Number, required: true },
   tokenURI: { type: String, required: true },
   auctionStarted: { type: Boolean, default: false },
@@ -17,6 +17,7 @@ const auctionSchema = new mongoose.Schema({
   mintedAt: { type: Date, default: Date.now },
   auctionStartTime: { type: Date, default: Date.now },
   auctionEndTime: { type: Date, default: Date.now },
+  basePrice: { type: String }, // Base price in ETH or wei
   bids: [bidSchema],
 });
 

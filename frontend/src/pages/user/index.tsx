@@ -1,15 +1,51 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, Zap, TrendingUp } from "lucide-react"
 import AuctionNFTCard from "@/components/ui/auction-nft-card"
+import axios from "axios"
+import { useDispatch } from "react-redux"
+import { setLoading } from '../../../redux/slices/loadingSlice';
 export const UserSide = () => {
     const [searchTerm, setSearchTerm] = useState("")
     const [filterBy, setFilterBy] = useState<"all" | "live" | "ending" | "new">("all")
-
+    const [auctionData, setAuctionData] = useState<any[]>([])
+    const [timeLeft, setTimeLeft] = useState<string>("")
+    const dispatch = useDispatch<UseDispatch>()
+    const [ethPrice, setEthPrice] = useState<number>(0)
     const handlePlaceBid = (bidAmount: number) => {
         console.log(`Bid placed: ${bidAmount} ETH`)
         alert(`Bid of ${bidAmount} ETH placed successfully!`)
     }
+
+    const handleGetNFT = async () => {
+        try {
+            dispatch(setLoading(true));
+            const response = await axios.get("http://localhost:3000/api/nft/all-auctions")
+            console.log("NFTs fetched successfully:", response.data.data)
+            setAuctionData(response.data.data)
+            // const auctions = response.data.data
+        } catch (error) {
+            console.error("Error fetching NFTs:", error)
+            alert("Failed to fetch NFTs. Please try again later.")
+        }finally{
+            dispatch(setLoading(false));
+        }
+    }
+    useEffect(() => {
+        handleGetNFT()
+    }, [])
+    const fetchETHPrice = async () => {
+        try {
+            const res = await axios.get(
+                "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+            );
+            const price = res.data.ethereum.usd;
+            setEthPrice(price);
+            console.log("ETH Price:", price);
+        } catch (err) {
+            console.error("Error fetching ETH price:", err);
+        }
+    };
 
     const handleFavorite = () => {
         console.log("Added to favorites")
@@ -88,6 +124,11 @@ export const UserSide = () => {
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                             <div className="flex items-center gap-6">
                                 <div>
+                                    <button onClick={() => { fetchETHPrice() }} className="bg-gray-800/50 hover:bg-gray-700/50 transition-colors rounded-lg px-4 py-2 flex items-center gap-2 border border-green-500/20">
+                                        <p>
+                                            fetch Ether price
+                                        </p>
+                                    </button>
                                     <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white via-green-100 to-green-400 bg-clip-text text-transparent">
                                         Live Auctions
                                     </h1>
@@ -114,19 +155,21 @@ export const UserSide = () => {
                     <div className="mb-8">
                         <div className="flex items-center justify-between">
                             <p className="text-gray-300 font-medium">
-                                Showing {filteredAuctions.length} of {auctions.length} auctions
+                                Showing {auctionData.length} of {auctionData.length} auctions
                                 {searchTerm && <span className="text-green-400 ml-1">for "{searchTerm}"</span>}
                             </p>
                         </div>
                     </div>
 
-                    {filteredAuctions.length > 0 ? (
+                    {auctionData.length > 0 ? (
                         <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                            {filteredAuctions.map((auction) => (
+                            {auctionData.map((auction) => (
                                 <AuctionNFTCard
                                     key={auction.id}
-                                    nftTitle={auction.nftTitle}
-                                    nftDescription={auction.nftDescription}
+                                    nftImage={auction.imageUrl}
+                                    tokenId={auction.tokenId}
+                                    nftTitle={auction.NFTname}
+                                    nftDescription={auction.NFTdescription}
                                     highestBid={auction.highestBid}
                                     basePrice={auction.basePrice}
                                     endTime={auction.endTime}
@@ -142,7 +185,7 @@ export const UserSide = () => {
                         <div className="text-center py-16">
                             <div className="w-24 h-24 bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <Search className="w-12 h-12 text-gray-500" />
-                            </div>
+                            </div>a
                             <h3 className="text-2xl font-bold text-white mb-2">No auctions found</h3>
                             <p className="text-gray-400 font-medium">
                                 Try adjusting your search terms or filters to find what you're looking for.
