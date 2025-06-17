@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Clock, TrendingUp, DollarSign, Zap, Heart, Share2, Eye } from "lucide-react"
+import { connectWallet } from "./meta_mask"
 
 interface AuctionNFTCardProps {
     nftImage?: string
@@ -238,7 +239,9 @@ const AuctionNFTCard: React.FC<AuctionNFTCardProps> = ({
                 {/* Place Bid Button */}
                 <div className="space-y-3">
                     <button
-                        onClick={() => setShowBidInput(!showBidInput)}
+                        onClick={() => {setShowBidInput(!showBidInput)
+                            connectWallet(); 
+                        }}
                         disabled={!isAuctionActive}
                         className="w-full h-16 bg-gradient-to-r from-green-600 via-green-500 to-green-400 hover:from-green-700 hover:via-green-600 hover:to-green-500 disabled:from-gray-600 disabled:via-gray-500 disabled:to-gray-400 text-black font-bold text-lg rounded-xl shadow-2xl shadow-green-500/25 hover:shadow-green-500/40 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none border border-green-400/20"
                     >

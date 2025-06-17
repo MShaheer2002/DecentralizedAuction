@@ -1,10 +1,7 @@
 "use client"
 import { useState } from "react"
-import { Search, Grid, Zap, TrendingUp, Clock, Users } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Search, Zap, TrendingUp } from "lucide-react"
 import AuctionNFTCard from "@/components/ui/auction-nft-card"
-
 export const UserSide = () => {
     const [searchTerm, setSearchTerm] = useState("")
     const [filterBy, setFilterBy] = useState<"all" | "live" | "ending" | "new">("all")
