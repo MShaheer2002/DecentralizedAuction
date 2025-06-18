@@ -298,106 +298,13 @@ export const AdminPage = () => {
                     </Button>
                 </div>
 
-                {/* Active Auctions Section */}
-                {auctionData.length > 0 && (
-                    <div className="mb-12">
-                        <div className="text-center mb-8">
-                            <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent mb-2">
-                                Active NFT Auctions
-                            </h2>
-                            <p className="text-gray-300 font-medium">Manage your ongoing auctions</p>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {auctionData.map((nft: any) => (
-                                <Card
-                                    key={nft._id}
-                                    className="bg-gray-900/50 backdrop-blur-xl border border-green-500/20 shadow-xl shadow-green-500/10 hover:shadow-green-500/20 transition-all duration-300 group relative overflow-hidden"
-                                >
-                                    {/* Background gradient effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                    <CardHeader className="pb-4 relative z-10">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <CardTitle className="text-lg font-bold text-white mb-2 line-clamp-1">{nft.NFTname}</CardTitle>
-                                                <CardDescription className="text-gray-400 text-sm line-clamp-2">
-                                                    {nft.NFTdescription}
-                                                </CardDescription>
-                                            </div>
-                                            {!nft.auctionEnded && (
-                                                <Button
-                                                    onClick={() => handleEndAuction(nft.tokenId)}
-                                                    size="sm"
-                                                    className="bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500 text-white font-semibold px-3 py-1 rounded-lg shadow-lg flex items-center gap-1 text-xs"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                    End
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </CardHeader>
-
-                                    <CardContent className="space-y-4 relative z-10">
-                                        {/* NFT Image */}
-                                        <div className="relative rounded-lg overflow-hidden bg-gray-800/50">
-                                            <img
-                                                src={nft.imageUrl || "/placeholder.svg?height=200&width=300"}
-                                                alt={nft.NFTname}
-                                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                        </div>
-
-                                        {/* Auction Details */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-400 font-medium">Base Price</span>
-                                                <span className="text-green-400 font-bold">{nft.basePrice} ETH</span>
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-400 font-medium">Highest Bid</span>
-                                                <span className="text-yellow-400 font-bold">
-                                                    {nft.bids && nft.bids.length > 0
-                                                        ? `${nft.bids.reduce((max: number, bid: any) => Math.max(max, Number.parseFloat(bid.amount)), 0).toFixed(9)} `
-                                                        : nft.basePrice} ETH
-                                                </span>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-400 font-medium">Started</span>
-                                                    <span className="text-gray-300 text-xs">
-                                                        {formatDate(nft.auctionStartTime)}
-                                                    </span>
-                                                </div>
-                                                {/* <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-400 font-medium">Ends</span>
-                          <span className="text-red-400 text-xs font-semibold">
-                            {new Date(nft.auctionEndTime * 1000).toLocaleDateString()}
-                          </span>
-                        </div> */}
-                                            </div>
-
-                                            {/* Status indicator */}
-                                            {/* <div className="flex items-center gap-2 pt-2 border-t border-gray-700/50">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                        <span className="text-green-400 text-xs font-semibold">Active Auction</span>
-                      </div> */}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
-                )}
 
                 {/* Main Mint NFT Card */}
                 <div className="max-w-2xl mx-auto">
-                    <Card className="bg-gray-900/50 backdrop-blur-xl border border-green-500/20 shadow-2xl shadow-green-500/10 ring-1 ring-green-500/10">
+                    <Card className="bg-gray-900/50 backdrop-blur-xl border border-green-500/20 shadow-2xl shadow-green-500/10 ring-1 ring-green-500/10 pt-0 ">
                         <CardHeader className="text-center pb-8 bg-gradient-to-r from-green-500/5 to-green-400/5 rounded-t-lg border-b border-green-500/10">
-                            <CardTitle className="text-2xl md:text-3xl font-bold text-white flex items-center justify-center gap-3">
+                            <CardTitle className="text-2xl md:text-3xl font-bold text-white flex items-center justify-center gap-3 pt-4">
                                 <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
                                     <Sparkles className="w-6 h-6 text-black" />
                                 </div>
@@ -676,6 +583,100 @@ export const AdminPage = () => {
                         </div>
                     </div>
                 </div>
+                {/* Active Auctions Section */}
+                {auctionData.length > 0 && (
+                    <div className="mb-12 mt-20 bg-gray-800/50 backdrop-blur-sm border border-green-500/20 rounded-xl p-4">
+                        <div className="text-center mb-8">
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-green-400 bg-clip-text text-transparent mb-2">
+                                Active NFT Auctions
+                            </h2>
+                            <p className="text-gray-300 font-medium">Manage your ongoing auctions</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {auctionData.map((nft: any) => (
+                                <Card
+                                    key={nft._id}
+                                    className="bg-gray-900/50 backdrop-blur-xl border border-green-500/20 shadow-xl shadow-green-500/10 hover:shadow-green-500/20 transition-all duration-300 group relative overflow-hidden"
+                                >
+                                    {/* Background gradient effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                    <CardHeader className="pb-4 relative z-10">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <CardTitle className="text-lg font-bold text-white mb-2 line-clamp-1">{nft.NFTname}</CardTitle>
+                                                <CardDescription className="text-gray-400 text-sm line-clamp-2">
+                                                    {nft.NFTdescription}
+                                                </CardDescription>
+                                            </div>
+                                            {!nft.auctionEnded && (
+                                                <Button
+                                                    onClick={() => handleEndAuction(nft.tokenId)}
+                                                    size="sm"
+                                                    className="bg-gradient-to-r from-red-500 to-red-400 hover:from-red-600 hover:to-red-500 text-white font-semibold px-3 py-1 rounded-lg shadow-lg flex items-center gap-1 text-xs"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                    End
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </CardHeader>
+
+                                    <CardContent className="space-y-4 relative z-10">
+                                        {/* NFT Image */}
+                                        <div className="relative rounded-lg overflow-hidden bg-gray-800/50">
+                                            <img
+                                                src={nft.imageUrl || "/placeholder.svg?height=200&width=300"}
+                                                alt={nft.NFTname}
+                                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                        </div>
+
+                                        {/* Auction Details */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-400 font-medium">Base Price</span>
+                                                <span className="text-green-400 font-bold">{nft.basePrice} ETH</span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-400 font-medium">Highest Bid</span>
+                                                <span className="text-yellow-400 font-bold">
+                                                    {nft.bids && nft.bids.length > 0
+                                                        ? `${nft.bids.reduce((max: number, bid: any) => Math.max(max, Number.parseFloat(bid.amount)), 0).toFixed(9)} `
+                                                        : nft.basePrice} ETH
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-400 font-medium">Started</span>
+                                                    <span className="text-gray-300 text-xs">
+                                                        {formatDate(nft.auctionStartTime)}
+                                                    </span>
+                                                </div>
+                                                {/* <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-400 font-medium">Ends</span>
+                          <span className="text-red-400 text-xs font-semibold">
+                            {new Date(nft.auctionEndTime * 1000).toLocaleDateString()}
+                          </span>
+                        </div> */}
+                                            </div>
+
+                                            {/* Status indicator */}
+                                            {/* <div className="flex items-center gap-2 pt-2 border-t border-gray-700/50">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                        <span className="text-green-400 text-xs font-semibold">Active Auction</span>
+                      </div> */}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
