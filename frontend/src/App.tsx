@@ -6,6 +6,7 @@ import store from "../redux/store";
 import { Provider } from "react-redux";
 import LoadingSpinner from "@/components/ui/loading"; 
 import Navbar from '@/components/ui/navbar';
+// import AdminRoute from "@/components/ui/AdminRoute"; 
 
 const AppRoutes = () => {
   return (
@@ -13,10 +14,17 @@ const AppRoutes = () => {
       <BrowserRouter>
         <Navbar /> 
         <AlertProvider>
-          <LoadingSpinner /> 
+          <LoadingSpinner />
           <Routes>
             <Route path="/" element={<UserSide />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route
+              path="/admin"
+              element={
+                // <AdminRoute>
+                  <AdminPage />
+                // </AdminRoute>
+              }
+            />
           </Routes>
         </AlertProvider>
       </BrowserRouter>

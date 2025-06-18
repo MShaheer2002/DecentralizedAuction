@@ -3,9 +3,11 @@ import multer from "multer";
 import { AuctionModel } from "../models/auction";
 import { uploadToPinata, uploadMetadataToPinata } from "../utils/pinata";
 import { auctionContract } from "../utils/web3";
-import { Log, LogDescription } from "ethers";
+import { Log, LogDescription, formatEther } from "ethers";
 import { Console } from "console";
-import { parseEther } from "ethers";
+import { parseEther,Wallet } from "ethers";
+import dotenv from "dotenv";
+dotenv.config();
 
 
 
@@ -128,12 +130,15 @@ router.post("/start-auction", async (req: Request, res: Response): Promise<void>
         const auctionEndTime = parsedLog.args.endTime.toString();
         const auctionEndDate = new Date(parseInt(auctionEndTime) * 1000);
 
+        const auctionStartTime = parsedLog.args.startTime.toString();
+        const auctionStartDate = new Date(parseInt(auctionStartTime) * 1000);
+
         await AuctionModel.findOneAndUpdate(
             { tokenId },
             {
                 auctionStarted: true,
                 auctionEnded: false,
-                auctionStartTime: new Date(),
+                auctionStartTime: auctionStartDate,
                 auctionEndTime: auctionEndDate,
                 basePrice: basePrice
             },
@@ -172,7 +177,7 @@ router.post("/record-bid", async (req: Request, res: Response): Promise<void> =>
                 $push: {
                     bids: {
                         bidder,
-                        amount: bidAmount,
+                        amount: bidAmount.toFixed(18),
                         time: new Date(),
                     },
                 },
@@ -189,7 +194,7 @@ router.post("/record-bid", async (req: Request, res: Response): Promise<void> =>
             message: "Bid recorded successfully",
             tokenId,
             bidder,
-            amount: bidAmount,
+            amount: bidAmount.toFixed(18),
         });
     } catch (err) {
         console.error("Record bid error:", err);
@@ -235,12 +240,10 @@ router.post("/end-auction", async (req: Request, res: Response): Promise<void> =
             {
                 auctionEnded: true,
                 auctionEndedAt: new Date(),
-                ...(winner && { winner }),
-                ...(finalBid && { finalBid }),
             }
         );
 
-        res.json({
+        res.status(200).json({
             message: "Auction ended successfully",
             tokenId,
             winner,
@@ -248,7 +251,7 @@ router.post("/end-auction", async (req: Request, res: Response): Promise<void> =
         });
     } catch (err) {
         console.error("End auction error:", err);
-        res.status(500).json({ error: "Failed to end auction" });
+        res.status(500).json({ error: `Failed to end auction ${err}`, });
     }
 });
 
@@ -267,6 +270,36 @@ router.get("/all-auctions", async (req: Request, res: Response): Promise<void> =
             success: false,
             error: "Failed to fetch auctions",
         });
+    }
+});
+
+router.post("/check-admin", async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { metamaskAddress } = req.body;
+        
+
+        if (!metamaskAddress) {
+            res.status(400).json({ error: "Metamask address is required" });
+            return;
+        }
+        const PRIVATE_KEY = process.env.PRIVATE_KEY!;
+
+        const wallet = new Wallet(PRIVATE_KEY);
+        const ownerAddress = wallet.address.toLowerCase();
+        const incomingAddress = metamaskAddress.toLowerCase();
+
+
+        const isAdmin = incomingAddress === ownerAddress;
+
+        if (!isAdmin) {
+            res.status(403).json({ status:403 ,error: "Unauthorized: Not admin" , isAdmin: false});
+            return;
+        }
+
+        res.status(200).json({ status:200 ,message: "Admin verified", isAdmin: true });
+    } catch (err) {
+        console.error("error:", err);
+        res.status(500).json({ status:500 ,error: "Failed to check admin" });
     }
 });
 

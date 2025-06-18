@@ -11,10 +11,10 @@ export const connectWallet = async () => {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
-        console.log("Accounts:", accounts);
-        console.log("Connected to wallet:", address);
-        console.log("Signer:", signer);
-        console.log("Provider:", provider);
+        // console.log("Accounts:", accounts);
+        // console.log("Connected to wallet:", address);
+        // console.log("Signer:", signer);
+        // console.log("Provider:", provider);
         return {
             address,
             signer,

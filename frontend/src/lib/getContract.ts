@@ -4,7 +4,7 @@ import AuctionABI from "../../../backend/artifacts/contracts/Auction.sol/Auction
 
 // Load contract address from environment or fallback to a hardcoded one
 const CONTRACT_ADDRESS =
-    "0xdAa1e038746340BbD9eE35dE9186d5BE306DCcBE";
+    "0xfdCd6f5aFec2E6CA25a60334673762c2CF2dfC10";
 
 /**
  * Returns an instance of the auction contract
